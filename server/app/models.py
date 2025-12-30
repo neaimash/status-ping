@@ -5,7 +5,6 @@ class Target(BaseModel):
     name: str
     url: str
     critical: bool
-    category: str
 
 class Status(BaseModel):
     name: str

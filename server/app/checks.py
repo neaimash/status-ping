@@ -25,5 +25,5 @@ async def check_target(target: Target, timeout: int) -> Status:
             latency=None
         )
 
-async def check_all(targets: list[Target], timeout: int):
+async def check_all_targets(targets: list[Target], timeout: int):
     return await asyncio.gather(*(check_target(t, timeout) for t in targets))
