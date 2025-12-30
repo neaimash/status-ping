@@ -1,0 +1,12 @@
+[
+  {
+    "name": "JSONPlaceholder",
+    "url": "https://jsonplaceholder.typicode.com/posts",
+    "critical": true
+  },
+  {
+    "name": "Httpbin Delay",
+    "url": "https://httpbin.org/delay/5",
+    "critical": false
+  }
+]
