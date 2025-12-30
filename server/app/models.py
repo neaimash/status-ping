@@ -1,12 +1,11 @@
 from pydantic import BaseModel
 from typing import Optional, Literal
 
-
 class Target(BaseModel):
     name: str
     url: str
     critical: bool
-
+    category: str
 
 class Status(BaseModel):
     name: str

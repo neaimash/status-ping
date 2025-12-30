@@ -1,5 +1,6 @@
 import time
 import httpx
+import asyncio      
 from .models import Target, Status
 
 async def check_target(target: Target, timeout: int) -> Status:
@@ -25,6 +26,4 @@ async def check_target(target: Target, timeout: int) -> Status:
         )
 
 async def check_all(targets: list[Target], timeout: int):
-    return await httpx.AsyncClient().gather(
-        *(check_target(t, timeout) for t in targets)
-    )
+    return await asyncio.gather(*(check_target(t, timeout) for t in targets))

@@ -2,11 +2,13 @@
   {
     "name": "JSONPlaceholder",
     "url": "https://jsonplaceholder.typicode.com/posts",
-    "critical": true
+    "critical": true,
+    "category": "vApp"
   },
   {
     "name": "Httpbin Delay",
     "url": "https://httpbin.org/delay/5",
-    "critical": false
+    "critical": false,
+    "category": "fApp"
   }
 ]
