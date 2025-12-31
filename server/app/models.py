@@ -11,3 +11,4 @@ class Status(BaseModel):
     url: str
     status: Literal["UP", "DOWN"]
     latency: Optional[int]
+    critical: bool

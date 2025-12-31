@@ -3,8 +3,17 @@ import json
 import os
 from app.models import Target
 from app.checks import check_all_targets
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Status Ping Server")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 TIMEOUT = int(os.getenv("TIMEOUT_SECONDS", 3))
 
