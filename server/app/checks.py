@@ -1,50 +1,69 @@
 import time
 import httpx
-import asyncio      
+import asyncio
+from typing import List, Dict, Any
 from .models import Target, Status
 
-async def check_target(target: Target, timeout: int) -> Status:
-    start = time.time()
-
-    try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            response = await client.get(target.url)
+async def check_target(
+    http_client: httpx.AsyncClient,
+    target: Target,
+    timeout: int,
+    retries: int = 2,
+) -> Status:
+    for attempt in range(retries):
+        start = time.time()
+        try:
+            response = await http_client.get(target.url, timeout=timeout)
             latency = int((time.time() - start) * 1000)
+            if response.status_code < 500:
+                return Status(
+                    name=target.name,
+                    url=target.url,
+                    status="UP",
+                    latency=latency,
+                    critical=target.critical,
+                )
+        except httpx.RequestError:
+            pass  
+        if attempt < retries - 1:
+            await asyncio.sleep(0.1)
 
-            return Status(
-                name=target.name,
-                url=target.url,
-                status="UP" if response.status_code < 499 else "DOWN",
-                latency=latency,
-                critical=target.critical
-            )
-
-    except Exception:
-        return Status(
-            name=target.name,
-            url=target.url,
-            status="DOWN",
-            latency=None,
-            critical=target.critical
-        )
-
-async def check_all_targets(targets: list[Target], timeout: int):
-    results: list[Status] = await asyncio.gather(
-        *(check_target(t, timeout) for t in targets)
+    return Status(
+        name=target.name,
+        url=target.url,
+        status="DOWN",
+        latency=None,
+        critical=target.critical,
     )
 
-    has_critical_down = any(
-        r.status == "DOWN" and r.critical
-        for r in results
+def summarize_results(results: List[Status]) -> Dict[str, Any]:
+    failed_services = [r.name for r in results if r.status == "DOWN"]
+    failed_critical_services = [r.name for r in results if r.status == "DOWN" and r.critical]
+    up_services = [r.name for r in results if r.status == "UP"]
+    avg_latency = (
+        sum(r.latency for r in results if r.latency is not None) / len(results)
+        if results else 0
     )
 
-    overall_status = (
-        "CRITICAL_FAILURE"
-        if has_critical_down
-        else "ALL_SYSTEMS_OK"
-    )
+    if failed_critical_services:
+        overall_status = "CRITICAL_FAILURE"
+    elif failed_services:
+        overall_status = "DEGRADED"
+    else:
+        overall_status = "ALL_SYSTEMS_OK"
 
     return {
         "overall_status": overall_status,
-        "targets": results
+        "failed_services": failed_services,
+        "failed_critical_services": failed_critical_services,
+        "up_services": up_services,
+        "average_latency_ms": avg_latency,
     }
+
+async def run_health_checks(targets: List[Target], timeout: int) -> Dict[str, Any]:
+    async with httpx.AsyncClient() as client:
+        results = await asyncio.gather(
+            *(check_target(client, t, timeout) for t in targets)
+        )
+
+    return {**summarize_results(results), "targets": results}
