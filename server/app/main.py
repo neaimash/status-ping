@@ -22,6 +22,10 @@ BASE_DIR = os.path.dirname(__file__)
 def load_targets_from_file(filename: str) -> list[Target]:
     with open(filename, "r", encoding="utf-8") as f:
         return [Target(**t) for t in json.load(f)]
+        
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 @app.get("/status/vapp")
 async def get_vapp_status():

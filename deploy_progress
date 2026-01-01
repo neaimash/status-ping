@@ -1,0 +1,273 @@
+1️⃣ מה צריך להוסיף לפרויקט (ברמת הקוד)
+✅ 1. שרת שמאזין ל-0.0.0.0 ולפורט מה־ENV
+
+ב־OpenShift הפורט מגיע ממשתנה סביבה.
+
+ב־main.py לא מריצים uvicorn ידנית
+אבל כן חשוב שהאפליקציה תוגדר נכון.
+
+הרצה תהיה בערך ככה:
+
+uvicorn app.main:app --host 0.0.0.0 --port 8080
+
+✅ 2. requirements.txt
+
+חייב להיות בשורש השרת:
+
+fastapi
+uvicorn[standard]
+httpx
+python-dotenv
+
+
+(אם יש עוד – להוסיף)
+
+✅ 3. Dockerfile (חובה!)
+
+OpenShift עובד עם קונטיינרים.
+
+Dockerfile מומלץ ל-FastAPI
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 8080
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+
+
+📌 חשוב:
+
+0.0.0.0
+
+פורט 8080 (סטנדרט ב-OpenShift)
+
+✅ 4. health endpoint (מומלץ)
+
+OpenShift אוהב health checks.
+
+ב־main.py:
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+2️⃣ מה צריך להוסיף לפרויקט (קבצי OpenShift)
+
+יש שתי גישות:
+
+דרך UI
+
+דרך CLI (oc)
+
+אני מסבירה את שתיהן – ה-UI יותר פשוטה להתחלה
+
+3️⃣ תהליך פריסה – דרך OpenShift UI (הכי נפוץ)
+🔹 שלב 1: Push ל-GitHub
+
+ודאי שיש:
+
+Dockerfile
+
+requirements.txt
+
+קוד עובד מקומית
+
+🔹 שלב 2: Create Application
+
+ב־OpenShift Console:
+
++Add
+
+From Git
+
+Repository URL
+
+Branch (main)
+
+Builder → Dockerfile
+
+🔹 שלב 3: הגדרות
+
+Application name: status-ping
+
+Resource type: Deployment
+
+Port: 8080
+
+🔹 שלב 4: Create
+
+OpenShift:
+
+יבנה image
+
+ירים pod
+
+ייצור service
+
+4️⃣ חשיפה החוצה (Route)
+
+אחרי שה-Pod רץ:
+
+לכי ל־Routes
+
+Create Route
+
+Service: שלך
+
+Port: 8080
+
+Type: HTTP (או HTTPS אם יש cert)
+
+📌 עכשיו יהיה לך URL ציבורי:
+
+https://status-ping.apps.xxx.openshift.com
+
+5️⃣ בדיקות אחרי פריסה
+
+בדקי:
+
+/health
+/status/vapp
+/status/fapp
+
+6️⃣ משתני סביבה (ENV)
+
+אם יש לך:
+
+TIMEOUT
+
+URLים
+
+flags
+
+הוספה דרך:
+Deployment → Environment → Add
+
+לדוגמה:
+
+TIMEOUT=5
+
+7️⃣ מה OpenShift עושה עבורך אוטומטית
+
+✔ restart אם השרת נופל
+✔ scaling
+✔ logs
+✔ health checks
+✔ routing
+
+8️⃣ MVP לפריסה (מינימום חובה)
+
+אם זה MVP:
+
+✔ FastAPI
+✔ Dockerfile
+✔ requirements.txt
+✔ health endpoint
+✔ Route
+
+זהו. לא צריך יותר.
+
+9️⃣ רוצה את השלב הבא?
+
+אפשר להמשיך ל:
+
+readiness / liveness probes
+
+HTTPS פנימי
+
+ConfigMap ל-targets
+
+CI/CD עם GitLab
+
+חיבור ל-React client
+
+רק תגידי באיזה שלב את – ואני אוביל אותך צעד-צעד 💪
+
+כשאני אעדכן את הפרויקט גם ה service יתעדכן?
+
+כן — אם פורסים נכון, עדכון בפרויקט יכול לעדכן אוטומטית גם את ה-Service שרץ ב-OpenShift 👍
+בואי נעשה סדר מה צריך להוסיף לפרויקט, איך נראה תהליך פריסה תקין, ו-איך גורמים לעדכונים להתגלגל אוטומטית.
+
+1️⃣ מה צריך להוסיף לפרויקט כדי לפרוס ל-OpenShift
+🔹 1. Dockerfile (חובה)
+
+OpenShift מריץ קונטיינרים. בלי Dockerfile — אין פריסה.
+
+דוגמה מותאמת ל-FastAPI + Uvicorn:
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app ./app
+
+EXPOSE 8080
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+
+
+⚠️ ב-OpenShift נהוג לעבוד על פורט 8080, לא 8000.
+
+🔹 2. requirements.txt
+
+שיהיה מעודכן:
+
+fastapi
+uvicorn
+httpx
+python-dotenv
+
+🔹 3. readiness / liveness (מומלץ מאוד)
+
+OpenShift אוהב health checks.
+
+הוסיפי ב-FastAPI:
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+2️⃣ מה OpenShift יוצר עבורך (ולא צריך להוסיף ידנית)
+רכיב	תפקיד
+Deployment	מריץ את הקונטיינר
+Service	חושף אותו פנימית
+Route	חושף החוצה (URL ציבורי)
+Pod	האינסטנס שרץ בפועל
+
+👉 את לא צריכה לכתוב YAML ידנית אם לא רוצים — OpenShift יכול ליצור הכול מה-UI או CLI.
+
+3️⃣ תהליך פריסה בסיסי (פעם ראשונה)
+אופציה מומלצת: From Git (S2I / Dockerfile)
+
+נכנסים ל-OpenShift Console
+
++Add → Import from Git
+
+מדביקים URL של הריפו
+
+OpenShift מזהה Dockerfile
+
+נותנים שם לאפליקציה
+
+Create
+
+🎉 זהו — יש לך:
+
+Build
+
+Image
+
+Deployment
+
+Service
+
+Route
