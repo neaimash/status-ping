@@ -1,0 +1,43 @@
+{
+  "model": "qwen3-vl-30b-a3b-instruct",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Call get_page_title, then continue based on the result."
+    },
+    {
+      "role": "assistant",
+      "content": "",
+      "tool_calls": [
+        {
+          "id": "call_1",
+          "type": "function",
+          "function": {
+            "name": "get_page_title",
+            "arguments": "{}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_1",
+      "content": "The page title is View."
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_page_title",
+        "description": "Get the current page title",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        }
+      }
+    }
+  ],
+  "max_tokens": 256
+}
